@@ -1,8 +1,8 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 
-const SITE_URL = "https://discord.com"; // must be exact origin
-const STORAGE_KEY = "token";            // will be null on Discord
+const SITE_URL = "https://discord.com";
+const STORAGE_KEY = "token";
 const STORAGE_STATE_FILE = "./storage_state.json";
 
 (async () => {
@@ -15,13 +15,10 @@ const STORAGE_STATE_FILE = "./storage_state.json";
     ]
   });
 
-  // Modern Puppeteer (v20+)
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
 
-  /* ============================
-     Restore cookies (if present)
-     ============================ */
+  // Restore cookies if present
   if (fs.existsSync(STORAGE_STATE_FILE)) {
     const state = JSON.parse(fs.readFileSync(STORAGE_STATE_FILE, "utf8"));
     if (Array.isArray(state.cookies) && state.cookies.length > 0) {
@@ -29,55 +26,46 @@ const STORAGE_STATE_FILE = "./storage_state.json";
     }
   }
 
-  /* ============================
-     Navigate safely
-     ============================ */
+  // Navigate (do NOT use networkidle2 on Discord)
   await page.goto(SITE_URL, {
     waitUntil: "domcontentloaded",
     timeout: 60000
   });
 
-  /* ============================
-     Ensure localStorage exists
-     ============================ */
-  await page.waitForFunction(() => {
-    return (
-      typeof window !== "undefined" &&
-      typeof window.localStorage !== "undefined"
-    );
-  }, { timeout: 30000 });
+  // Safely attempt to read localStorage
+  const result = await page.evaluate((key) => {
+    try {
+      if (typeof window === "undefined") {
+        return { available: false, value: null };
+      }
 
-  /* ============================
-     Read localStorage key
-     ============================ */
-  const value = await page.evaluate((key) => {
-    return window.localStorage.getItem(key);
+      if (!("localStorage" in window)) {
+        return { available: false, value: null };
+      }
+
+      return {
+        available: true,
+        value: window.localStorage.getItem(key)
+      };
+    } catch (e) {
+      return { available: false, value: null };
+    }
   }, STORAGE_KEY);
 
-  console.log("LocalStorage value:", value);
+  if (!result.available) {
+    console.log("localStorage is NOT available on this page.");
+  } else {
+    console.log("LocalStorage value:", result.value);
+  }
 
-  /* ============================
-     Save cookies + localStorage
-     ============================ */
+  // Save cookies only (localStorage may not exist)
   const cookies = await page.cookies();
-
-  const localStorageData = await page.evaluate(() => {
-    const data = {};
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const k = window.localStorage.key(i);
-      data[k] = window.localStorage.getItem(k);
-    }
-    return data;
-  });
 
   fs.writeFileSync(
     STORAGE_STATE_FILE,
-    JSON.stringify(
-      { cookies, localStorage: localStorageData },
-      null,
-      2
-    )
+    JSON.stringify({ cookies }, null, 2)
   );
 
   await browser.close();
 })();
+s
