@@ -11,7 +11,7 @@ const STORAGE_STATE_FILE = "./storage_state.json";
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
-  const context = await browser.createIncognitoBrowserContext();
+  const context = await browser.createBrowserContext();
   const page = await context.newPage();
 
   // Restore cookies
