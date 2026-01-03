@@ -68,4 +68,3 @@ const STORAGE_STATE_FILE = "./storage_state.json";
 
   await browser.close();
 })();
-s
