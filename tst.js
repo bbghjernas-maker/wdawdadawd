@@ -1,8 +1,8 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 
-const SITE_URL = "https://site";
-const STORAGE_KEY = "thing";
+const SITE_URL = "https://discord.com";
+const STORAGE_KEY = "token";
 const STORAGE_STATE_FILE = "./storage_state.json";
 
 (async () => {
